@@ -1,0 +1,21 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تتبع الطلب</title>
+</head>
+<body>
+    <h2>تتبع الطلب</h2>
+    <form>
+        رقم الجوال: <input id="phone"><br>
+        <button type="button" onclick="trackOrder()">تتبع</button>
+    </form>
+    <div id="result"></div>
+    <script>
+        function trackOrder() {
+            document.getElementById("result").innerHTML = "جاري التحقق... (يرجى ربط السكريبت بخدمة Google Sheets)";
+        }
+    </script>
+</body>
+</html>
