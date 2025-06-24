@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>نموذج تواصل وتتبع الطلب - الرواد</title>
+  <style>
+    body { background-color: #f4f8fc; font-family: Arial; padding: 20px; }
+    .container { max-width: 700px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, select, textarea, button {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 5px; font-size: 15px;
+    }
+    button { background-color: #003366; color: white; font-weight: bold; cursor: pointer; }
+    .success, .track-result { display: none; text-align: center; margin-top: 20px; color: green; font-weight: bold; }
+    .track-box { margin-top: 40px; }
+
+    .status-track {
+      display: flex; justify-content: space-between; align-items: center; position: relative; margin-top: 30px;
+    }
+    .status-track::before {
+      content: ''; position: absolute; top: 50%; left: 10%; right: 10%; height: 4px;
+      background-color: #ccc; z-index: 0;
+    }
+    .step {
+      background-color: #ccc; color: white; width: 40px; height: 40px;
+      line-height: 40px; border-radius: 50%; z-index: 1; text-align: center;
+    }
+    .active { background-color: #28a745; }
+    .label { font-size: 14px; margin-top: 8px; text-align: center; }
+    .step-container { text-align: center; width: 33%; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📞 تواصل معنا</h2>
+    <form id="contactForm">
+      <label>الاسم الكامل:</label>
+      <input type="text" required>
+      <label>رقم الجوال:</label>
+      <input type="tel" required>
+      <label>نوع التواصل:</label>
+      <select id="typeSelect" required>
+        <option disabled selected>اختر نوع التواصل</option>
+        <option>طلب منتج</option>
+        <option>طلب صيانة</option>
+        <option>متابعة طلب</option>
+      </select>
+      <div id="aluminumOptions" style="display: none;">
+        <label>نوع المنتج:</label>
+        <select>
+          <option disabled selected>اختر نوع المنتج</option>
+          <option value="ألمنيوم - واجهات مباني">ألمنيوم - واجهات مباني</option>
+          <option value="سكريت - واجهات محلات">سكريت - واجهات محلات</option>
+          <option value="كلاهما">كلاهما</option>
+        </select>
+      </div>
+      <label>رسالتك:</label>
+      <textarea rows="4" required></textarea>
+      <button type="submit">إرسال</button>
+    </form>
+    <div class="success" id="successMessage">
+      ✅ تم استلام رسالتك<br>
+      رقم الطلب: <span id="orderNumber"></span><br>
+      سيتم التواصل معكم وقت الدوام من السبت إلى الخميس من الساعة 7:30 إلى 4:30
+    </div>
+
+    <div class="track-box">
+      <h2>🔍 متابعة الطلب</h2>
+      <label>أدخل رقم الطلب:</label>
+      <input type="number" id="trackInput" placeholder="مثال: 12345">
+      <button onclick="track()">متابعة</button>
+      <div id="notFound" style="display: none; color: red; margin-top: 10px;">رقم الطلب غير موجود.</div>
+
+      <div class="track-result" id="trackDetails"></div>
+
+      <div class="status-track" id="trackingSteps" style="display: none;">
+        <div class="step-container">
+          <div class="step" id="step1">1</div>
+          <div class="label">تم استقبال الطلب</div>
+        </div>
+        <div class="step-container">
+          <div class="step" id="step2">2</div>
+          <div class="label">عند الفريق المختص</div>
+        </div>
+        <div class="step-container">
+          <div class="step" id="step3">3</div>
+          <div class="label">تم الانتهاء والتواصل</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+<script>
+  // إضافة طلب تجريبي داخل localStorage عند أول تحميل
+  window.addEventListener('DOMContentLoaded', function () {
+    if (!localStorage.getItem('orders')) {
+      const demoOrder = [{
+        id: 12345,
+        name: "محمد العسيري",
+        phone: "0555555555",
+        type: "طلب صيانة",
+        product: "ألمنيوم - واجهات مباني",
+        message: "أحتاج صيانة للواجهة الأمامية",
+        status: 2
+      }];
+      localStorage.setItem('orders', JSON.stringify(demoOrder));
+    }
+  });
+
+    const form = document.getElementById('contactForm');
+    const successMessage = document.getElementById('successMessage');
+    const orderNumberSpan = document.getElementById('orderNumber');
+    const aluminumOptions = document.getElementById('aluminumOptions');
+
+    document.getElementById('typeSelect').addEventListener('change', function () {
+      const selected = this.value;
+      if (["طلب منتج", "طلب صيانة", "متابعة طلب"].includes(selected)) {
+        aluminumOptions.style.display = "block";
+      } else {
+        aluminumOptions.style.display = "none";
+      }
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = form.querySelector('input[type="text"]').value;
+      const phone = form.querySelector('input[type="tel"]').value;
+      const type = document.getElementById('typeSelect').value;
+      const message = form.querySelector('textarea').value;
+      const productType = aluminumOptions.querySelector('select').value;
+      const orderId = Math.floor(Math.random() * (99999 - 100) + 100);
+
+      const order = { id: orderId, name, phone, type, product: productType, message, status: 1 };
+      let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      orders.push(order);
+      localStorage.setItem('orders', JSON.stringify(orders));
+
+      orderNumberSpan.innerText = orderId;
+      form.style.display = 'none';
+      successMessage.style.display = 'block';
+    });
+
+    function track() {
+      const input = parseInt(document.getElementById('trackInput').value);
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      const order = orders.find(o => o.id === input);
+
+      const step1 = document.getElementById('step1');
+      const step2 = document.getElementById('step2');
+      const step3 = document.getElementById('step3');
+      const steps = document.getElementById('trackingSteps');
+      const details = document.getElementById('trackDetails');
+      const notFound = document.getElementById('notFound');
+
+      step1.classList.remove('active');
+      step2.classList.remove('active');
+      step3.classList.remove('active');
+      steps.style.display = 'none';
+      details.style.display = 'none';
+      notFound.style.display = 'none';
+
+      if (!order) {
+        notFound.style.display = 'block';
+        return;
+      }
+
+      details.innerHTML = `<br><strong>الاسم:</strong> ${order.name}<br><strong>رقم الجوال:</strong> ${order.phone}<br><strong>نوع الطلب:</strong> ${order.type}<br><strong>نوع المنتج:</strong> ${order.product}<br><strong>الرسالة:</strong> ${order.message}<br>${order.reply ? '<strong>رد الإدارة:</strong> ' + order.reply + '<br>' : ''}
+        <br><strong>الاسم:</strong> ${order.name}<br>
+        <strong>رقم الجوال:</strong> ${order.phone}<br>
+        <strong>نوع الطلب:</strong> ${order.type}<br>
+        <strong>نوع المنتج:</strong> ${order.product}<br>
+        <strong>الرسالة:</strong> ${order.message}
+      `;
+      details.style.display = 'block';
+
+      if (order.status >= 1) step1.classList.add('active');
+      if (order.status >= 2) step2.classList.add('active');
+      if (order.status >= 3) step3.classList.add('active');
+      steps.style.display = 'flex';
+    }
+  </script>
+</body>
+</html>
